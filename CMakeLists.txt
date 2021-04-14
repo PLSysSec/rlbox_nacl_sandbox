@@ -93,14 +93,14 @@ add_subdirectory("${catch2_SOURCE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/contrib")
 
 FetchContent_Declare(
-  mod_nacl
+  modnacl
   GIT_REPOSITORY https://github.com/shravanrn/Sandboxing_NaCl.git)
-FetchContent_GetProperties(mod_nacl)
-if(NOT mod_nacl_POPULATED)
-  FetchContent_Populate(mod_nacl)
+FetchContent_GetProperties(modnacl)
+if(NOT modnacl_POPULATED)
+  FetchContent_Populate(modnacl)
 endif()
 
-# set(mod_nacl_SOURCE_DIR "/home/shr/Code/LibrarySandboxing/Sandboxing_NaCl")
+# set(modnacl_SOURCE_DIR "/home/shr/Code/LibrarySandboxing/Sandboxing_NaCl")
 
 # Nacl compiler and runtime ###################
 
@@ -119,7 +119,7 @@ else()
   set(NACL_BUILD_TYPE "dbg")
 endif()
 set(NACL_BUILD_OUTPUT_FOLDER "scons-out-firefox")
-set(NACL_BUILD_OUTPUT_PATH "${mod_nacl_SOURCE_DIR}/native_client/${NACL_BUILD_OUTPUT_FOLDER}")
+set(NACL_BUILD_OUTPUT_PATH "${modnacl_SOURCE_DIR}/native_client/${NACL_BUILD_OUTPUT_FOLDER}")
 set(NACL_RUNTIME_DIR "${NACL_BUILD_OUTPUT_PATH}/${NACL_BUILD_TYPE}-linux-${NACL_PLATFORM_PARAM}/lib/")
 set(NACL_LIBRARY_SANDBOX_RUNTIME
   "${NACL_RUNTIME_DIR}/libdyn_ldr.a"
@@ -163,12 +163,12 @@ set (NACL_LIBRARY_SANDBOX_PROJECTS
   "${NACL_BUILD_OUTPUT_FOLDER}/nacl_irt-${NACL_PLATFORM_PARAM}/staging/irt_core.nexe"
   "ncval_new"
 )
-set(NACL_COMPILER_DIR "${mod_nacl_SOURCE_DIR}/native_client/toolchain/linux_x86/pnacl_newlib_raw/bin/")
+set(NACL_COMPILER_DIR "${modnacl_SOURCE_DIR}/native_client/toolchain/linux_x86/pnacl_newlib_raw/bin/")
 set(NACL_C_COMPILER "${NACL_COMPILER_DIR}/${NACL_PLATFORM_PARAM_ALT}-nacl-clang")
 set(NACL_LIBC_PATH "${NACL_BUILD_OUTPUT_PATH}/nacl_irt-${NACL_PLATFORM_PARAM}/staging/irt_core.nexe")
 
 add_custom_command(OUTPUT ${NACL_LIBRARY_SANDBOX_RUNTIME}
-                   WORKING_DIRECTORY "${mod_nacl_SOURCE_DIR}/native_client"
+                   WORKING_DIRECTORY "${modnacl_SOURCE_DIR}/native_client"
                    COMMAND make -C .. init
                    COMMAND ./scons
                            -f ./SConstruct_Firefox
@@ -206,7 +206,7 @@ add_custom_command(OUTPUT ${GLUE_LIB_SO}
                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/c_src
                    COMMAND rlbox_SOURCE_DIR=${rlbox_SOURCE_DIR}
                            NACL_C_COMPILER=${NACL_C_COMPILER}
-                           mod_nacl_SOURCE_DIR=${mod_nacl_SOURCE_DIR}
+                           modnacl_SOURCE_DIR=${modnacl_SOURCE_DIR}
                            ${CMAKE_COMMAND}
                            -S
                            .
@@ -236,7 +236,7 @@ target_include_directories(test_rlbox_glue
 target_include_directories(test_rlbox_glue
                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib)
 target_include_directories(test_rlbox_glue
-                           PUBLIC ${mod_nacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr)
+                           PUBLIC ${modnacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr)
 
 target_compile_definitions(test_rlbox_glue PUBLIC
                            GLUE_LIB_NACL_PATH="${GLUE_LIB_SO}"
@@ -268,7 +268,7 @@ target_include_directories(test_rlbox_glue_embed
 target_include_directories(test_rlbox_glue_embed
                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib)
 target_include_directories(test_rlbox_glue_embed
-                           PUBLIC ${mod_nacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr)
+                           PUBLIC ${modnacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr)
 
 target_compile_definitions(test_rlbox_glue_embed PUBLIC
                            GLUE_LIB_NACL_PATH="${GLUE_LIB_SO}"

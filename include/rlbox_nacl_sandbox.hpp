@@ -239,7 +239,7 @@ private:
   size_t return_slot_size = 0;
   T_PointerType return_slot = 0;
 
-  static const size_t MAX_CALLBACKS = 8;
+  static constexpr size_t MAX_CALLBACKS = 8;
   mutable RLBOX_SHARED_LOCK(callback_mutex);
   void* callback_unique_keys[MAX_CALLBACKS]{ 0 };
   void* callbacks[MAX_CALLBACKS]{ 0 };
@@ -265,8 +265,11 @@ private:
     }
   }
 
+  template<typename T>
+  using TCallBackRetConv = std::conditional_t<std::is_same_v<float, T>, uint32_t, T>;
+
   template<uint32_t N, typename T_Ret, typename... T_Args>
-  static T_Ret callback_interceptor(
+  static TCallBackRetConv<T_Ret> callback_interceptor(
     void* /* vmContext */,
     rlbox_nacl_sandbox* /* curr_sbx */)
   {
@@ -283,7 +286,18 @@ private:
 
   	NaClSandbox_Thread* naclThreadData = callbackParamsBegin(thread_data.sandbox->sandbox);
     std::tuple<T_Args...> args { COMPLETELY_UNTRUSTED_CALLBACK_STACK_PARAM(naclThreadData, T_Args)... };
-    return std::apply(func, args);
+
+    static_assert(!std::is_same_v<double, T_Ret>, "Callbacks returning doubles not supported");
+
+    if constexpr(std::is_void_v<T_Ret>) {
+      std::apply(func, args);
+    } else if constexpr (std::is_same_v<float, T_Ret>) {
+      float ret = std::apply(func, args);
+      uint32_t* intRetPtr = (uint32_t*) &ret;
+      return *intRetPtr;
+    } else {
+      return std::apply(func, args);
+    }
   }
 
   template<uint32_t N, typename T_Ret, typename... T_Args>
@@ -596,8 +610,19 @@ protected:
       "increase the maximum allowed callbacks or unsadnboxed functions "
       "pointers");
 
-    uintptr_t result =
-      registerSandboxCallbackWithState(sandbox, found_loc, (uintptr_t) chosen_interceptor, this);
+    uintptr_t result = 0;
+
+    static_assert(!std::is_same_v<double, T_Ret>, "Callbacks that return doubles are not supported");
+
+    if constexpr(std::is_same_v<float, T_Ret>){
+      constexpr int floatCallbackSlot = MAX_CALLBACKS -1;
+      detail::dynamic_check(callbacks[floatCallbackSlot] == nullptr, "Float callback slot already in use");
+      chosen_interceptor = reinterpret_cast<void*>(callback_interceptor<floatCallbackSlot, T_Ret, T_Args...>);
+      found_loc = floatCallbackSlot;
+      result = registerSandboxFloatCallbackWithState(sandbox, found_loc, (uintptr_t) chosen_interceptor, this);
+    } else {
+      result = registerSandboxCallbackWithState(sandbox, found_loc, (uintptr_t) chosen_interceptor, this);
+    }
 
     callback_unique_keys[found_loc] = key;
     callbacks[found_loc] = callback;
