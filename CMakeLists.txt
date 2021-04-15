@@ -162,6 +162,7 @@ set (NACL_LIBRARY_SANDBOX_PROJECTS
   "nccopy_${NACL_PLATFORM_PARAM_ALT2}"
   "${NACL_BUILD_OUTPUT_FOLDER}/nacl_irt-${NACL_PLATFORM_PARAM}/staging/irt_core.nexe"
   "ncval_new"
+  "sel_ldr"
 )
 set(NACL_COMPILER_DIR "${modnacl_SOURCE_DIR}/native_client/toolchain/linux_x86/pnacl_newlib_raw/bin/")
 set(NACL_C_COMPILER "${NACL_COMPILER_DIR}/${NACL_PLATFORM_PARAM_ALT}-nacl-clang")

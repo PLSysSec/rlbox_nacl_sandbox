@@ -26,8 +26,13 @@ set(modnacl_SOURCE_DIR $ENV{modnacl_SOURCE_DIR})
 set(CMAKE_C_COMPILER ${NACL_C_COMPILER})
 set(CMAKE_CXX_COMPILER ${NACL_C_COMPILER}++)
 set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_STANDARD 11)
+
 
 add_executable(glue_lib_nacl.nexe
                ${modnacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr/dyn_ldr_sandbox_init.c
                ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib/libtest.c)
 target_include_directories(glue_lib_nacl.nexe PUBLIC ${modnacl_SOURCE_DIR})
+
+add_executable(syscall_bench_nacl.nexe
+              ${CMAKE_SOURCE_DIR}/syscall_bench.cpp)
