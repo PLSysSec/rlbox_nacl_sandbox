@@ -92,15 +92,17 @@ endif()
 add_subdirectory("${catch2_SOURCE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/contrib")
 
-FetchContent_Declare(
-  modnacl
-  GIT_REPOSITORY https://github.com/shravanrn/Sandboxing_NaCl.git)
-FetchContent_GetProperties(modnacl)
-if(NOT modnacl_POPULATED)
-  FetchContent_Populate(modnacl)
+if (EXISTS "${CMAKE_SOURCE_DIR}/../Sandboxing_NaCl")
+  set(modnacl_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../Sandboxing_NaCl")
+else()
+  FetchContent_Declare(
+    modnacl
+    GIT_REPOSITORY https://github.com/shravanrn/Sandboxing_NaCl.git)
+  FetchContent_GetProperties(modnacl)
+  if(NOT modnacl_POPULATED)
+    FetchContent_Populate(modnacl)
+  endif()
 endif()
-
-# set(modnacl_SOURCE_DIR "/home/shr/Code/LibrarySandboxing/Sandboxing_NaCl")
 
 # Nacl compiler and runtime ###################
 
