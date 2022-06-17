@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(DEV "Use settings suitable for dev contributions to rlbox" OFF)
-option(BUILD32 "Build 32-bit binaries" ON)
+option(BUILD32 "Build 32-bit binaries" OFF)
 
 if (BUILD32)
   add_compile_options(-m32)
@@ -83,7 +83,7 @@ endif()
 
 FetchContent_Declare(catch2
                      GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-                     GIT_TAG v2.9.1)
+                     GIT_TAG v2.13.7)
 FetchContent_GetProperties(catch2)
 if(NOT catch2_POPULATED)
   FetchContent_Populate(catch2)
@@ -92,16 +92,13 @@ endif()
 add_subdirectory("${catch2_SOURCE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/contrib")
 
-if (EXISTS "${CMAKE_SOURCE_DIR}/../Sandboxing_NaCl")
-  set(modnacl_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../Sandboxing_NaCl")
+if (EXISTS "${CMAKE_SOURCE_DIR}/../nacl_rlbox")
+  set(modnacl_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../nacl_rlbox")
 else()
-  FetchContent_Declare(
-    modnacl
-    GIT_REPOSITORY https://github.com/shravanrn/Sandboxing_NaCl.git)
-  FetchContent_GetProperties(modnacl)
-  if(NOT modnacl_POPULATED)
-    FetchContent_Populate(modnacl)
-  endif()
+message(
+  FATAL_ERROR
+    "Use gclient sync to create folder ${CMAKE_SOURCE_DIR}/../nacl_rlbox"
+  )
 endif()
 
 # Nacl compiler and runtime ###################
@@ -120,7 +117,7 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
 else()
   set(NACL_BUILD_TYPE "dbg")
 endif()
-set(NACL_BUILD_OUTPUT_FOLDER "scons-out-firefox")
+set(NACL_BUILD_OUTPUT_FOLDER "scons-out")
 set(NACL_BUILD_OUTPUT_PATH "${modnacl_SOURCE_DIR}/native_client/${NACL_BUILD_OUTPUT_FOLDER}")
 set(NACL_RUNTIME_DIR "${NACL_BUILD_OUTPUT_PATH}/${NACL_BUILD_TYPE}-linux-${NACL_PLATFORM_PARAM}/lib/")
 set(NACL_LIBRARY_SANDBOX_RUNTIME
@@ -166,15 +163,13 @@ set (NACL_LIBRARY_SANDBOX_PROJECTS
   "ncval_new"
   "sel_ldr"
 )
-set(NACL_COMPILER_DIR "${modnacl_SOURCE_DIR}/native_client/toolchain/linux_x86/pnacl_newlib_raw/bin/")
+set(NACL_COMPILER_DIR "${modnacl_SOURCE_DIR}/native_client/toolchain/linux_x86/pnacl_newlib/bin/")
 set(NACL_C_COMPILER "${NACL_COMPILER_DIR}/${NACL_PLATFORM_PARAM_ALT}-nacl-clang")
 set(NACL_LIBC_PATH "${NACL_BUILD_OUTPUT_PATH}/nacl_irt-${NACL_PLATFORM_PARAM}/staging/irt_core.nexe")
 
 add_custom_command(OUTPUT ${NACL_LIBRARY_SANDBOX_RUNTIME}
                    WORKING_DIRECTORY "${modnacl_SOURCE_DIR}/native_client"
-                   COMMAND make -C .. init
                    COMMAND ./scons
-                           -f ./SConstruct_Firefox
                            MODE=${NACL_BUILD_TYPE}-linux,nacl
                            platform=${NACL_PLATFORM_PARAM}
                            werror=0
@@ -211,10 +206,9 @@ add_custom_command(OUTPUT ${GLUE_LIB_SO}
                            NACL_C_COMPILER=${NACL_C_COMPILER}
                            modnacl_SOURCE_DIR=${modnacl_SOURCE_DIR}
                            ${CMAKE_COMMAND}
-                           -S
-                           .
-                           -B
-                           ${CMAKE_BINARY_DIR}/nacl
+                           -S .
+                           -B ${CMAKE_BINARY_DIR}/nacl
+                           -DCMAKE_BUILD_TYPE=Release
                    COMMAND VERBOSE=1
                            ${CMAKE_COMMAND}
                            --build

@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 
+set(ASM_OPTIONS "-x assembler-with-cpp")
+enable_language(C CXX ASM)
+
 # Mac adds extra flags
 set(HAVE_FLAG_SEARCH_PATHS_FIRST 0)
 
@@ -31,6 +34,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 add_executable(glue_lib_nacl.nexe
                ${modnacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr/dyn_ldr_sandbox_init.c
+               ${modnacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr/dyn_ldr_sandbox_init_asm.S
                ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib/libtest.c)
 target_include_directories(glue_lib_nacl.nexe PUBLIC ${modnacl_SOURCE_DIR})
 

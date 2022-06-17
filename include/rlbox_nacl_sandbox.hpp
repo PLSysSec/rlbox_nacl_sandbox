@@ -224,10 +224,10 @@ rlbox_nacl_sandbox_thread_data* get_rlbox_nacl_sandbox_thread_data();
 class rlbox_nacl_sandbox
 {
 public:
-  using T_LongLongType = long long;
-  using T_LongType = long;
-  using T_IntType = int;
-  using T_PointerType = uintptr_t;
+  using T_LongLongType = int64_t;
+  using T_LongType = int32_t;
+  using T_IntType = int32_t;
+  using T_PointerType = uint32_t;
   using T_ShortType = short;
 
 private:
@@ -460,7 +460,7 @@ protected:
   {
     #if defined(__x86_64__)
       // Just clear the memory base to leave the offset
-      RLBOX_LUCET_UNUSED(example_unsandboxed_ptr);
+      RLBOX_NACL_UNUSED(example_unsandboxed_ptr);
       uintptr_t ret = reinterpret_cast<uintptr_t>(p) &
                       std::numeric_limits<T_PointerType>::max();
       return static_cast<T_PointerType>(ret);
