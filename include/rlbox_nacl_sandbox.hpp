@@ -266,12 +266,22 @@ private:
   }
 
   template<typename T>
+  static T callback_param(NaClSandbox_Thread* naclThreadData) {
+    if constexpr(std::is_floating_point_v<T>) {
+      return COMPLETELY_UNTRUSTED_CALLBACK_STACK_FLOATPARAM(naclThreadData, T);
+    } else {
+      return COMPLETELY_UNTRUSTED_CALLBACK_STACK_PARAM(naclThreadData, T);
+    }
+  }
+
+  template<typename T>
   using TCallBackRetConv = std::conditional_t<std::is_same_v<float, T>, uint32_t, T>;
 
   template<uint32_t N, typename T_Ret, typename... T_Args>
   static TCallBackRetConv<T_Ret> callback_interceptor(
     void* /* vmContext */,
-    rlbox_nacl_sandbox* /* curr_sbx */)
+    rlbox_nacl_sandbox* /* curr_sbx */,
+    uint64_t* returnBuffer)
   {
 #ifdef RLBOX_EMBEDDER_PROVIDES_TLS_STATIC_VARIABLES
     auto& thread_data = *get_rlbox_nacl_sandbox_thread_data();
@@ -285,16 +295,17 @@ private:
     }
 
   	NaClSandbox_Thread* naclThreadData = callbackParamsBegin(thread_data.sandbox->sandbox);
-    std::tuple<T_Args...> args { COMPLETELY_UNTRUSTED_CALLBACK_STACK_PARAM(naclThreadData, T_Args)... };
+    std::tuple<T_Args...> args { callback_param<T_Args>(naclThreadData)... };
 
     static_assert(!std::is_same_v<double, T_Ret>, "Callbacks returning doubles not supported");
 
+    *returnBuffer = 0;
     if constexpr(std::is_void_v<T_Ret>) {
       std::apply(func, args);
-    } else if constexpr (std::is_same_v<float, T_Ret>) {
-      float ret = std::apply(func, args);
-      uint32_t* intRetPtr = (uint32_t*) &ret;
-      return *intRetPtr;
+    } else if constexpr(sizeof(T_Ret) <= sizeof(uint64_t)) {
+      auto ret = std::apply(func, args);
+      memcpy(returnBuffer, &ret, sizeof(ret));
+      return ret;
     } else {
       return std::apply(func, args);
     }
@@ -303,17 +314,20 @@ private:
   template<uint32_t N, typename T_Ret, typename... T_Args>
   static void callback_interceptor_promoted(
     void* /* vmContext */,
-    rlbox_nacl_sandbox* /* curr_sbx */)
+    rlbox_nacl_sandbox* /* curr_sbx */,
+    uint64_t* returnBuffer)
   {
-#ifdef RLBOX_EMBEDDER_PROVIDES_TLS_STATIC_VARIABLES
-    auto& thread_data = *get_rlbox_nacl_sandbox_thread_data();
-#endif
+    // Not implemented
+    static_assert(std::is_same_v<std::void_t<T_Ret>, void>, "Class return not implemented");
+// #ifdef RLBOX_EMBEDDER_PROVIDES_TLS_STATIC_VARIABLES
+//     auto& thread_data = *get_rlbox_nacl_sandbox_thread_data();
+// #endif
 
-    auto ret_val = callback_interceptor<N, T_Ret, T_Args...>(nullptr, nullptr);
-    // Copy the return value back
-    auto ret_ptr = reinterpret_cast<T_Ret*>(
-      thread_data.sandbox->template impl_get_unsandboxed_pointer<T_Ret*>(ret_val));
-    *ret_ptr = ret_val;
+//     auto ret_val = callback_interceptor<N, T_Ret, T_Args...>(nullptr, nullptr, returnBuffer);
+//     // Copy the return value back
+//     auto ret_ptr = reinterpret_cast<T_Ret*>(
+//       thread_data.sandbox->template impl_get_unsandboxed_pointer<T_Ret*>(*returnBuffer));
+//     *ret_ptr = ret_val;
   }
 
   template<typename T_Ret, typename... T_Args>
