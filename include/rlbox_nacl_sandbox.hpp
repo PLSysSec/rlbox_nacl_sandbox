@@ -297,8 +297,6 @@ private:
   	NaClSandbox_Thread* naclThreadData = callbackParamsBegin(thread_data.sandbox->sandbox);
     std::tuple<T_Args...> args { callback_param<T_Args>(naclThreadData)... };
 
-    static_assert(!std::is_same_v<double, T_Ret>, "Callbacks returning doubles not supported");
-
     *returnBuffer = 0;
     if constexpr(std::is_void_v<T_Ret>) {
       std::apply(func, args);
@@ -628,10 +626,14 @@ protected:
 
     uintptr_t result = 0;
 
-    static_assert(!std::is_same_v<double, T_Ret>, "Callbacks that return doubles are not supported");
-
-    if constexpr(std::is_same_v<float, T_Ret>){
-      constexpr int floatCallbackSlot = MAX_CALLBACKS -1;
+    if constexpr(std::is_same_v<double, T_Ret>){
+      constexpr int doubleCallbackSlot = MAX_CALLBACKS - 2;
+      detail::dynamic_check(callbacks[doubleCallbackSlot] == nullptr, "double callback slot already in use");
+      chosen_interceptor = reinterpret_cast<void*>(callback_interceptor<doubleCallbackSlot, T_Ret, T_Args...>);
+      found_loc = doubleCallbackSlot;
+      result = registerSandboxDoubleCallbackWithState(sandbox, found_loc, (uintptr_t) chosen_interceptor, this);
+    } else if constexpr(std::is_same_v<float, T_Ret>){
+      constexpr int floatCallbackSlot = MAX_CALLBACKS - 1;
       detail::dynamic_check(callbacks[floatCallbackSlot] == nullptr, "Float callback slot already in use");
       chosen_interceptor = reinterpret_cast<void*>(callback_interceptor<floatCallbackSlot, T_Ret, T_Args...>);
       found_loc = floatCallbackSlot;
