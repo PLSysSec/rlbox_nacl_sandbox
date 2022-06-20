@@ -547,7 +547,9 @@ protected:
       sandbox_handleNaClArgs(naclThreadData, func_ptr, params...);
       invokeFunctionCall(naclThreadData, (void*) func_ptr);
 
-      if constexpr (std::is_floating_point_v<T_Ret>) {
+      if constexpr (std::is_same_v<T_Ret, float>) {
+        return (T_Ret) functionCallReturnFloat(naclThreadData);
+      } else if constexpr (std::is_same_v<T_Ret, double>) {
         return (T_Ret) functionCallReturnDouble(naclThreadData);
       } else if constexpr (!std::is_same_v<T_Ret, void>) {
         return (T_Ret) functionCallReturnRawPrimitiveInt(naclThreadData);
