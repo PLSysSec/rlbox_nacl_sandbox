@@ -163,8 +163,11 @@ set (NACL_LIBRARY_SANDBOX_PROJECTS
   "ncval_new"
   "sel_ldr"
 )
-set(NACL_COMPILER_DIR "${modnacl_SOURCE_DIR}/native_client/toolchain/linux_x86/pnacl_newlib/bin/")
-set(NACL_C_COMPILER "${NACL_COMPILER_DIR}/${NACL_PLATFORM_PARAM_ALT}-nacl-clang")
+set(NACL_COMPILER_DIR "${modnacl_SOURCE_DIR}/native_client/toolchain/linux_x86")
+set(NACL_C_COMPILER "${NACL_COMPILER_DIR}/pnacl_newlib/bin/${NACL_PLATFORM_PARAM_ALT}-nacl-clang")
+set(NACL_CXX_COMPILER "${NACL_COMPILER_DIR}/pnacl_newlib/bin/${NACL_PLATFORM_PARAM_ALT}-nacl-clang++")
+set(NACL_C_COMPILER_GCC "${NACL_COMPILER_DIR}/nacl_x86_glibc/bin/${NACL_PLATFORM_PARAM_ALT}-nacl-gcc")
+set(NACL_CXX_COMPILER_GCC "${NACL_COMPILER_DIR}/nacl_x86_glibc/bin/${NACL_PLATFORM_PARAM_ALT}-nacl-g++")
 set(NACL_LIBC_PATH "${NACL_BUILD_OUTPUT_PATH}/nacl_irt-${NACL_PLATFORM_PARAM}/staging/irt_core.nexe")
 
 add_custom_command(OUTPUT ${NACL_LIBRARY_SANDBOX_RUNTIME}
@@ -199,11 +202,13 @@ include(CTest)
 include(Catch)
 
 set(GLUE_LIB_SO "${CMAKE_BINARY_DIR}/nacl/glue_lib_nacl.nexe")
+set(GLUE_LIB_GCC_SO "${CMAKE_BINARY_DIR}/nacl_gcc/glue_lib_nacl.nexe")
 
-add_custom_command(OUTPUT ${GLUE_LIB_SO}
+add_custom_command(OUTPUT ${GLUE_LIB_SO} ${GLUE_LIB_GCC_SO}
                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/c_src
                    COMMAND rlbox_SOURCE_DIR=${rlbox_SOURCE_DIR}
                            NACL_C_COMPILER=${NACL_C_COMPILER}
+                           NACL_CXX_COMPILER=${NACL_CXX_COMPILER}
                            modnacl_SOURCE_DIR=${modnacl_SOURCE_DIR}
                            ${CMAKE_COMMAND}
                            -S .
@@ -211,13 +216,23 @@ add_custom_command(OUTPUT ${GLUE_LIB_SO}
                            -DCMAKE_BUILD_TYPE=Release
                    COMMAND VERBOSE=1
                            ${CMAKE_COMMAND}
-                           --build
-                           ${CMAKE_BINARY_DIR}/nacl
-                           --target
-                           all
+                           --build ${CMAKE_BINARY_DIR}/nacl
+                           --target all
+                   COMMAND rlbox_SOURCE_DIR=${rlbox_SOURCE_DIR}
+                           NACL_C_COMPILER=${NACL_C_COMPILER_GCC}
+                           NACL_CXX_COMPILER=${NACL_CXX_COMPILER_GCC}
+                           modnacl_SOURCE_DIR=${modnacl_SOURCE_DIR}
+                           ${CMAKE_COMMAND}
+                           -S .
+                           -B ${CMAKE_BINARY_DIR}/nacl_gcc
+                           -DCMAKE_BUILD_TYPE=Release
+                   COMMAND VERBOSE=1
+                           ${CMAKE_COMMAND}
+                           --build ${CMAKE_BINARY_DIR}/nacl_gcc
+                           --target all
                    COMMENT "Building nacl library")
 
-add_custom_target(glue_lib_nacl ALL DEPENDS nacl_runtime ${GLUE_LIB_NACL} ${GLUE_LIB_SO})
+add_custom_target(glue_lib_nacl ALL DEPENDS nacl_runtime ${GLUE_LIB_SO} ${GLUE_LIB_GCC_SO})
 
 find_package(Threads REQUIRED)
 
@@ -252,6 +267,38 @@ if(UNIX AND NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin"))
   target_link_libraries(test_rlbox_glue rt)
 endif()
 catch_discover_tests(test_rlbox_glue)
+
+###################
+
+add_executable(test_rlbox_glue_gcc test/test_nacl_sandbox_glue_main.cpp
+                               test/test_nacl_sandbox_glue.cpp)
+target_include_directories(test_rlbox_glue_gcc PUBLIC include)
+target_include_directories(test_rlbox_glue_gcc
+                           PUBLIC ${rlbox_SOURCE_DIR}/code/include)
+target_include_directories(test_rlbox_glue_gcc
+                           PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue)
+target_include_directories(test_rlbox_glue_gcc
+                           PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib)
+target_include_directories(test_rlbox_glue_gcc
+                           PUBLIC ${modnacl_SOURCE_DIR}/native_client/src/trusted/dyn_ldr)
+
+target_compile_definitions(test_rlbox_glue_gcc PUBLIC
+                           GLUE_LIB_NACL_PATH="${GLUE_LIB_GCC_SO}"
+                           NACL_LIBC_PATH="${NACL_LIBC_PATH}")
+
+target_link_libraries(test_rlbox_glue_gcc
+                      Catch2::Catch2
+                      ${NACL_LIBRARY_SANDBOX_RUNTIME}
+                      ${CMAKE_THREAD_LIBS_INIT}
+                      ${CMAKE_DL_LIBS}
+                      )
+
+add_dependencies(test_rlbox_glue_gcc nacl_runtime)
+
+if(UNIX AND NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin"))
+  target_link_libraries(test_rlbox_glue_gcc rt)
+endif()
+catch_discover_tests(test_rlbox_glue_gcc)
 
 ####
 
