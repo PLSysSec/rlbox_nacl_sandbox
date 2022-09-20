@@ -2,7 +2,7 @@
 
 **This is a prototype. Not yet ready for production use.**
 
-Integration with RLBox sandboxing API to leverage the sandboxing in Native Client (NaCl) modules compiled with NaCl clang compiler.
+Integration with RLBox sandboxing API to leverage the sandboxing in Native Client (NaCl) modules compiled with NaCl clang or NaCl gcc compilers.
 
 For details about the RLBox sandboxing APIs, see [here](https://github.com/PLSysSec/rlbox_api_cpp17).
 
