@@ -95,10 +95,8 @@ list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/contrib")
 if (EXISTS "${CMAKE_SOURCE_DIR}/../nacl_rlbox")
   set(modnacl_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../nacl_rlbox")
 else()
-message(
-  FATAL_ERROR
-    "Use gclient sync to create folder ${CMAKE_SOURCE_DIR}/../nacl_rlbox"
-  )
+  set(modnacl_SOURCE_DIR "${CMAKE_SOURCE_DIR}/nacl_rlbox")
+  execute_process(COMMAND "${CMAKE_SOURCE_DIR}/nacl_rlbox/call_gclient_sync.sh")
 endif()
 
 # Nacl compiler and runtime ###################

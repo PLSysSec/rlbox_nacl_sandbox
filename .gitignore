@@ -1,3 +1,6 @@
 /build*/
 /target/
 /.vscode/
+nacl_rlbox/.gclient_entries
+nacl_rlbox/.gclient_previous_sync_commits
+nacl_rlbox/.cipd
