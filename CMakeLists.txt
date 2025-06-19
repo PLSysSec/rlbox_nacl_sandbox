@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(rlbox_nacl
         VERSION 0.1
-        DESCRIPTION "RLBox integration with WASM modules compiled with nacl")
+        DESCRIPTION "RLBox integration with nacl modules compiled")
 
 # Project Settings ###################
 
